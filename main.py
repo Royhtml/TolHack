@@ -51,20 +51,23 @@ class Animations:
 
     @staticmethod
     def matrix_rain(duration=2):
-        chars = "01"
-        width = os.get_terminal_size().columns
-        lines = [-1] * width
-        end_time = time.time() + duration
-        
-        while time.time() < end_time:
-            for i in range(width):
-                if lines[i] < 0 or random.random() < 0.05:
-                    lines[i] = 0
-                print(f"{Colors.GREEN}\033[{lines[i]};{i}H{random.choice(chars)}{Colors.END}", end="")
-                lines[i] += 1
-                if lines[i] >= os.get_terminal_size().lines:
-                    lines[i] = -1
-            time.sleep(0.1)
+        try:
+            chars = "01"
+            width = os.get_terminal_size().columns
+            lines = [-1] * width
+            end_time = time.time() + duration
+            
+            while time.time() < end_time:
+                for i in range(width):
+                    if lines[i] < 0 or random.random() < 0.05:
+                        lines[i] = 0
+                    print(f"{Colors.GREEN}\033[{lines[i]};{i}H{random.choice(chars)}{Colors.END}", end="")
+                    lines[i] += 1
+                    if lines[i] >= os.get_terminal_size().lines:
+                        lines[i] = -1
+                time.sleep(0.1)
+        except:
+            pass
 
     @staticmethod
     def bouncing_ball(duration=3):
@@ -93,6 +96,64 @@ class Animations:
             time.sleep(0.2)
         print("\r" + " " * 50 + "\r", end="")
 
+class GitHubInstaller:
+    """Class untuk instalasi otomatis dari GitHub"""
+    
+    @staticmethod
+    def install_from_github(repo_url, install_dir=None, build_commands=None, requirements_file="requirements.txt"):
+        """
+        Install tool dari GitHub repository secara otomatis
+        
+        Args:
+            repo_url: URL repository GitHub
+            install_dir: Directory instalasi (optional)
+            build_commands: List commands untuk build/install
+            requirements_file: Nama file requirements (default: requirements.txt)
+        """
+        try:
+            # Extract repo name from URL
+            repo_name = repo_url.split('/')[-1].replace('.git', '')
+            if install_dir is None:
+                install_dir = repo_name
+            
+            print(f"{Colors.CYAN}📥 Installing {repo_name} from GitHub...{Colors.END}")
+            
+            # Clone repository
+            if not os.path.exists(install_dir):
+                clone_cmd = f"git clone --depth 1 {repo_url} {install_dir}"
+                if not TermuxInstaller.run_command_static(clone_cmd, f"Cloning {repo_name}"):
+                    return False
+            else:
+                print(f"{Colors.YELLOW}⚠️  Directory {install_dir} already exists, skipping clone{Colors.END}")
+            
+            # Change to install directory
+            original_dir = os.getcwd()
+            os.chdir(install_dir)
+            
+            # Install Python requirements if exists
+            if os.path.exists(requirements_file):
+                print(f"{Colors.CYAN}📦 Installing Python dependencies...{Colors.END}")
+                pip_cmd = f"pip install -r {requirements_file}"
+                if not TermuxInstaller.run_command_static(pip_cmd, "Installing dependencies"):
+                    os.chdir(original_dir)
+                    return False
+            
+            # Run build commands if provided
+            if build_commands:
+                print(f"{Colors.CYAN}🔨 Running build commands...{Colors.END}")
+                for cmd in build_commands:
+                    if not TermuxInstaller.run_command_static(cmd, f"Running: {cmd}"):
+                        os.chdir(original_dir)
+                        return False
+            
+            os.chdir(original_dir)
+            print(f"{Colors.GREEN}✅ {repo_name} installed successfully!{Colors.END}")
+            return True
+            
+        except Exception as e:
+            print(f"{Colors.RED}❌ Failed to install from GitHub: {str(e)}{Colors.END}")
+            return False
+
 class ToolRunner:
     """Class untuk menjalankan tools setelah instalasi"""
     
@@ -112,30 +173,39 @@ class ToolRunner:
         print(f"\n{Colors.MAGENTA}💡 Tips: Use '--help' or '-h' for more options{Colors.END}")
 
     @staticmethod
-    def run_tool_interactive(tool_name, commands):
-        """Menjalankan tool secara interaktif"""
-        print(f"\n{Colors.GREEN}🎯 {tool_name} installed successfully!{Colors.END}")
-        print(f"{Colors.YELLOW}Do you want to run it now?{Colors.END}")
-        print(f"{Colors.WHITE}1. Run interactively{Colors.END}")
+    def ask_run_option(tool_name):
+        """Menanyakan opsi running setelah instalasi"""
+        print(f"\n{Colors.GREEN}✅ {tool_name} installed successfully!{Colors.END}")
+        print(f"{Colors.YELLOW}What would you like to do?{Colors.END}")
+        print(f"{Colors.WHITE}1. Run tool now{Colors.END}")
         print(f"{Colors.WHITE}2. Show usage information{Colors.END}")
-        print(f"{Colors.WHITE}3. Return to menu{Colors.END}")
+        print(f"{Colors.WHITE}3. Return to menu (install only){Colors.END}")
         
         try:
             choice = input(f"\n{Colors.CYAN}Select option [1-3]: {Colors.END}").strip()
-            
-            if choice == "1":
-                print(f"\n{Colors.GREEN}🚀 Starting {tool_name}...{Colors.END}")
-                time.sleep(1)
-                for command in commands:
-                    os.system(command)
-                    
-            elif choice == "2":
-                return False  # Kembali ke menu setelah menampilkan info
-                
+            return choice
         except KeyboardInterrupt:
             print(f"\n{Colors.YELLOW}⏹️  Operation cancelled.{Colors.END}")
-            
-        return True
+            return "3"
+
+    @staticmethod
+    def run_tool(tool_name, commands, usage_info=None, examples=None):
+        """Menjalankan tool dengan opsi interaktif"""
+        choice = ToolRunner.ask_run_option(tool_name)
+        
+        if choice == "1":
+            print(f"\n{Colors.GREEN}🚀 Starting {tool_name}...{Colors.END}")
+            time.sleep(1)
+            for command in commands:
+                os.system(command)
+            return True
+        elif choice == "2":
+            if usage_info:
+                ToolRunner.show_tool_info(tool_name, usage_info, examples or [])
+            input(f"\n{Colors.YELLOW}Press Enter to continue...{Colors.END}")
+            return False
+        else:
+            return False
 
 class TermuxInstaller:
     def __init__(self):
@@ -320,18 +390,14 @@ class TermuxInstaller:
             'status': status
         })
 
-    def run_command(self, command: str, description: str = "", show_output: bool = False) -> bool:
-        """Run shell command with enhanced progress indicator"""
+    @staticmethod
+    def run_command_static(command: str, description: str = "", show_output: bool = False) -> bool:
+        """Static method untuk run command (bisa dipanggil tanpa instance)"""
         if description:
             print(f"{Colors.YELLOW}[*] {description}...{Colors.END}")
         
-        # Show random animation
-        animations = [Animations.loading_animation, Animations.spinning_circle]
-        random.choice(animations)(2, description)
-        
         try:
             if show_output:
-                # Show real-time output
                 process = subprocess.Popen(
                     command,
                     shell=True,
@@ -342,14 +408,12 @@ class TermuxInstaller:
                     universal_newlines=True
                 )
                 
-                # Read output in real-time
                 for line in process.stdout:
                     print(f"{Colors.BLUE}{line.strip()}{Colors.END}")
                 
                 process.wait()
                 return_code = process.returncode
             else:
-                # Run silently with progress indicator
                 process = subprocess.Popen(
                     command,
                     shell=True,
@@ -359,30 +423,31 @@ class TermuxInstaller:
                 )
                 return_code = process.wait()
 
-            if return_code == 0:
-                print(f"{Colors.GREEN}[✓] {description} completed successfully!{Colors.END}")
-                self.log_installation(description, "Success")
-                return True
-            else:
-                print(f"{Colors.RED}[✗] {description} failed!{Colors.END}")
-                self.log_installation(description, "Failed")
-                return False
+            return return_code == 0
                 
         except Exception as e:
             print(f"{Colors.RED}[✗] Error: {str(e)}{Colors.END}")
-            self.log_installation(description, f"Error: {str(e)}")
             return False
 
-    def post_install_handler(self, tool_name, commands=None):
-        """Menangani proses setelah instalasi berhasil"""
-        if tool_name in self.tool_usage_info:
-            info = self.tool_usage_info[tool_name]
-            ToolRunner.show_tool_info(tool_name, info["info"], info.get("examples", []))
+    def run_command(self, command: str, description: str = "", show_output: bool = False) -> bool:
+        """Run shell command dengan progress indicator"""
+        if description:
+            print(f"{Colors.YELLOW}[*] {description}...{Colors.END}")
         
-        if commands:
-            return ToolRunner.run_tool_interactive(tool_name, commands)
+        # Show random animation
+        animations = [Animations.loading_animation, Animations.spinning_circle]
+        random.choice(animations)(2, description)
         
-        return False
+        success = self.run_command_static(command, "", show_output)
+        
+        if success:
+            print(f"{Colors.GREEN}[✓] {description} completed successfully!{Colors.END}")
+            self.log_installation(description, "Success")
+        else:
+            print(f"{Colors.RED}[✗] {description} failed!{Colors.END}")
+            self.log_installation(description, "Failed")
+            
+        return success
 
     def install_dependencies(self):
         """Install basic dependencies"""
@@ -464,79 +529,112 @@ class TermuxInstaller:
 
     def install_nethunter(self):
         Animations.typewriter(f"{Colors.RED}🚀 Installing Kali Nethunter...{Colors.END}")
-        commands = [
-            ("git clone https://github.com/Hax4us/Nethunter-In-Termux.git", "Cloning Nethunter", False),
-            ("cd Nethunter-In-Termux && chmod +x kalinethunter", "Setting up Nethunter", False),
-            ("cd Nethunter-In-Termux && ./kalinethunter", "Installing Kali Nethunter", True)
-        ]
-        for cmd, desc, show_out in commands:
-            if not self.run_command(cmd, desc, show_out):
-                return False
-        
-        print(f"\n{Colors.GREEN}🎯 Kali Nethunter installed!{Colors.END}")
-        print(f"{Colors.CYAN}Run: cd Nethunter-In-Termux && ./kalinethunter{Colors.END}")
-        return True
+        return GitHubInstaller.install_from_github(
+            "https://github.com/Hax4us/Nethunter-In-Termux.git",
+            build_commands=["chmod +x kalinethunter", "./kalinethunter"]
+        )
 
     def install_metasploit(self):
         Animations.matrix_rain(2)
         success = self.run_command("pkg install -y unstable-repo && pkg install -y metasploit", 
                                  "Installing Metasploit Framework", True)
         if success:
-            return self.post_install_handler("Metasploit Framework", ["msfconsole"])
+            info = self.tool_usage_info.get("Metasploit Framework", {})
+            return ToolRunner.run_tool(
+                "Metasploit Framework", 
+                ["msfconsole"],
+                info.get("info"),
+                info.get("examples")
+            )
         return success
 
     def install_sqlmap(self):
-        success = self.run_command("git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git", 
-                                 "Installing SQLMap", False)
+        success = GitHubInstaller.install_from_github("https://github.com/sqlmapproject/sqlmap.git")
         if success:
-            return self.post_install_handler("SQLMap", ["cd sqlmap && python sqlmap.py --help"])
+            info = self.tool_usage_info.get("SQLMap", {})
+            return ToolRunner.run_tool(
+                "SQLMap", 
+                ["cd sqlmap && python sqlmap.py --help"],
+                info.get("info"),
+                info.get("examples")
+            )
         return success
 
     def install_nmap(self):
         success = self.run_command("pkg install -y nmap", "Installing Nmap", False)
         if success:
-            return self.post_install_handler("Nmap", ["nmap --help"])
+            info = self.tool_usage_info.get("Nmap", {})
+            return ToolRunner.run_tool(
+                "Nmap", 
+                ["nmap --help"],
+                info.get("info"),
+                info.get("examples")
+            )
         return success
 
     def install_hydra(self):
         success = self.run_command("pkg install -y hydra", "Installing Hydra", False)
         if success:
-            return self.post_install_handler("Hydra", ["hydra -h"])
+            info = self.tool_usage_info.get("Hydra", {})
+            return ToolRunner.run_tool(
+                "Hydra", 
+                ["hydra -h"],
+                info.get("info"),
+                info.get("examples")
+            )
         return success
 
     def install_aircrack(self):
         success = self.run_command("pkg install -y aircrack-ng", "Installing Aircrack-ng", False)
         if success:
-            return self.post_install_handler("Aircrack-ng", ["aircrack-ng --help"])
+            info = self.tool_usage_info.get("Aircrack-ng", {})
+            return ToolRunner.run_tool(
+                "Aircrack-ng", 
+                ["aircrack-ng --help"],
+                info.get("info"),
+                info.get("examples")
+            )
         return success
 
     def install_john(self):
         success = self.run_command("pkg install -y john", "Installing John The Ripper", False)
         if success:
-            return self.post_install_handler("John The Ripper", ["john --help"])
+            info = self.tool_usage_info.get("John The Ripper", {})
+            return ToolRunner.run_tool(
+                "John The Ripper", 
+                ["john --help"],
+                info.get("info"),
+                info.get("examples")
+            )
         return success
 
     def install_wireshark(self):
         success = self.run_command("pkg install -y tshark", "Installing Wireshark (tshark)", False)
         if success:
-            return self.post_install_handler("Wireshark/Tshark", ["tshark --help"])
+            info = self.tool_usage_info.get("Wireshark/Tshark", {})
+            return ToolRunner.run_tool(
+                "Wireshark/Tshark", 
+                ["tshark --help"],
+                info.get("info"),
+                info.get("examples")
+            )
         return success
 
     def install_beef(self):
         Animations.typewriter(f"{Colors.MAGENTA}🐮 Installing Beef Framework...{Colors.END}")
-        commands = [
-            ("pkg install -y ruby nodejs", "Installing dependencies for Beef", False),
-            ("git clone https://github.com/beefproject/beef.git", "Cloning Beef Framework", False),
-            ("cd beef && gem install bundler", "Installing Bundler", True),
-            ("cd beef && bundle install", "Installing Beef dependencies", True)
-        ]
-        for cmd, desc, show_out in commands:
-            if not self.run_command(cmd, desc, show_out):
-                return False
-        
-        print(f"\n{Colors.GREEN}🎯 Beef Framework installed!{Colors.END}")
-        print(f"{Colors.CYAN}Run: cd beef && ./beef{Colors.END}")
-        return True
+        success = self.run_command("pkg install -y ruby nodejs", "Installing dependencies for Beef", False)
+        if success:
+            success = GitHubInstaller.install_from_github(
+                "https://github.com/beefproject/beef.git",
+                build_commands=[
+                    "gem install bundler",
+                    "bundle install"
+                ]
+            )
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Beef Framework installed!{Colors.END}")
+            print(f"{Colors.CYAN}Run: cd beef && ./beef{Colors.END}")
+        return success
 
     def install_burpsuite(self):
         success = self.run_command("pkg install -y burpsuite", "Installing Burp Suite Community", True)
@@ -551,60 +649,41 @@ class TermuxInstaller:
         return success
 
     def install_setoolkit(self):
-        commands = [
-            ("git clone https://github.com/trustedsec/social-engineer-toolkit.git setoolkit/", "Cloning SEToolkit", False),
-            ("cd setoolkit && pip install -r requirements.txt", "Installing SEToolkit dependencies", True)
-        ]
-        for cmd, desc, show_out in commands:
-            if not self.run_command(cmd, desc, show_out):
-                return False
-        
-        print(f"\n{Colors.GREEN}🎯 SEToolkit installed!{Colors.END}")
-        print(f"{Colors.CYAN}Run: cd setoolkit && python setoolkit{Colors.END}")
-        return True
+        success = GitHubInstaller.install_from_github(
+            "https://github.com/trustedsec/social-engineer-toolkit.git",
+            "setoolkit"
+        )
+        if success:
+            print(f"\n{Colors.GREEN}🎯 SEToolkit installed!{Colors.END}")
+            print(f"{Colors.CYAN}Run: cd setoolkit && python setoolkit{Colors.END}")
+        return success
 
     def install_routersploit(self):
-        commands = [
-            ("git clone https://github.com/threat9/routersploit.git", "Cloning RouterSploit", False),
-            ("cd routersploit && pip install -r requirements.txt", "Installing RouterSploit dependencies", True)
-        ]
-        for cmd, desc, show_out in commands:
-            if not self.run_command(cmd, desc, show_out):
-                return False
-        
-        print(f"\n{Colors.GREEN}🎯 RouterSploit installed!{Colors.END}")
-        print(f"{Colors.CYAN}Run: cd routersploit && python rsf.py{Colors.END}")
-        return True
+        success = GitHubInstaller.install_from_github("https://github.com/threat9/routersploit.git")
+        if success:
+            print(f"\n{Colors.GREEN}🎯 RouterSploit installed!{Colors.END}")
+            print(f"{Colors.CYAN}Run: cd routersploit && python rsf.py{Colors.END}")
+        return success
 
     def install_reconng(self):
-        commands = [
-            ("git clone https://github.com/lanmaster53/recon-ng.git", "Cloning Recon-ng", False),
-            ("cd recon-ng && pip install -r REQUIREMENTS", "Installing Recon-ng dependencies", True)
-        ]
-        for cmd, desc, show_out in commands:
-            if not self.run_command(cmd, desc, show_out):
-                return False
-        
-        print(f"\n{Colors.GREEN}🎯 Recon-ng installed!{Colors.END}")
-        print(f"{Colors.CYAN}Run: cd recon-ng && python recon-ng{Colors.END}")
-        return True
+        success = GitHubInstaller.install_from_github(
+            "https://github.com/lanmaster53/recon-ng.git",
+            requirements_file="REQUIREMENTS"
+        )
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Recon-ng installed!{Colors.END}")
+            print(f"{Colors.CYAN}Run: cd recon-ng && python recon-ng{Colors.END}")
+        return success
 
     def install_theharvester(self):
-        commands = [
-            ("git clone https://github.com/laramies/theHarvester.git", "Cloning TheHarvester", False),
-            ("cd theHarvester && pip install -r requirements.txt", "Installing TheHarvester dependencies", True)
-        ]
-        for cmd, desc, show_out in commands:
-            if not self.run_command(cmd, desc, show_out):
-                return False
-        
-        print(f"\n{Colors.GREEN}🎯 TheHarvester installed!{Colors.END}")
-        print(f"{Colors.CYAN}Run: cd theHarvester && python theHarvester.py -h{Colors.END}")
-        return True
+        success = GitHubInstaller.install_from_github("https://github.com/laramies/theHarvester.git")
+        if success:
+            print(f"\n{Colors.GREEN}🎯 TheHarvester installed!{Colors.END}")
+            print(f"{Colors.CYAN}Run: cd theHarvester && python theHarvester.py -h{Colors.END}")
+        return success
 
     def install_osint(self):
-        success = self.run_command("git clone https://github.com/lockfale/OSINT-Framework.git", 
-                                 "Installing OSINT Framework", False)
+        success = GitHubInstaller.install_from_github("https://github.com/lockfale/OSINT-Framework.git")
         if success:
             print(f"\n{Colors.GREEN}🎯 OSINT Framework installed!{Colors.END}")
             print(f"{Colors.CYAN}Open: firefox OSINT-Framework/index.html{Colors.END}")
@@ -728,18 +807,16 @@ class TermuxInstaller:
     def install_termux_theme(self):
         """Install Termux theme and customization"""
         Animations.typewriter(f"{Colors.CYAN}🎨 Installing Termux Theme...{Colors.END}")
-        commands = [
-            ("pkg install -y termux-styling", "Installing Termux Styling", False),
-            ("git clone https://github.com/adi1090x/termux-style.git", "Cloning Termux Style", False),
-            ("cd termux-style && chmod +x install && ./install", "Installing Termux Style", True)
-        ]
-        for cmd, desc, show_out in commands:
-            if not self.run_command(cmd, desc, show_out):
-                return False
-        
-        print(f"\n{Colors.GREEN}🎯 Termux Theme installed!{Colors.END}")
-        print(f"{Colors.CYAN}Run: termux-style{Colors.END}")
-        return True
+        success = self.run_command("pkg install -y termux-styling", "Installing Termux Styling", False)
+        if success:
+            success = GitHubInstaller.install_from_github(
+                "https://github.com/adi1090x/termux-style.git",
+                build_commands=["./install"]
+            )
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Termux Theme installed!{Colors.END}")
+            print(f"{Colors.CYAN}Run: termux-style{Colors.END}")
+        return success
 
     def install_games(self):
         """Install some fun games for Termux"""
@@ -917,6 +994,12 @@ class TermuxInstaller:
         # Welcome animation
         Animations.typewriter(f"{Colors.GREEN}🚀 Welcome to Termux Professional Installer!{Colors.END}")
         Animations.loading_animation(2, "Initializing")
+        
+        # Check and install dependencies if needed
+        print(f"{Colors.YELLOW}Checking system dependencies...{Colors.END}")
+        if not self.run_command("which git", "Checking Git", False):
+            print(f"{Colors.CYAN}Installing basic dependencies...{Colors.END}")
+            self.install_dependencies()
         
         while True:
             self.display_menu()

@@ -93,77 +93,163 @@ class Animations:
             time.sleep(0.2)
         print("\r" + " " * 50 + "\r", end="")
 
+class ToolRunner:
+    """Class untuk menjalankan tools setelah instalasi"""
+    
+    @staticmethod
+    def show_tool_info(tool_name, usage_info, example_commands):
+        """Menampilkan informasi penggunaan tool"""
+        print(f"\n{Colors.CYAN}{Colors.BOLD}📖 {tool_name} - USAGE INFORMATION{Colors.END}")
+        print(f"{Colors.YELLOW}═" * 60 + Colors.END)
+        print(f"{Colors.WHITE}{usage_info}{Colors.END}")
+        
+        if example_commands:
+            print(f"\n{Colors.GREEN}🚀 Example Commands:{Colors.END}")
+            for i, (desc, cmd) in enumerate(example_commands, 1):
+                print(f"{Colors.YELLOW}{i}. {desc}:{Colors.END}")
+                print(f"{Colors.BLUE}   {cmd}{Colors.END}")
+        
+        print(f"\n{Colors.MAGENTA}💡 Tips: Use '--help' or '-h' for more options{Colors.END}")
+
+    @staticmethod
+    def run_tool_interactive(tool_name, commands):
+        """Menjalankan tool secara interaktif"""
+        print(f"\n{Colors.GREEN}🎯 {tool_name} installed successfully!{Colors.END}")
+        print(f"{Colors.YELLOW}Do you want to run it now?{Colors.END}")
+        print(f"{Colors.WHITE}1. Run interactively{Colors.END}")
+        print(f"{Colors.WHITE}2. Show usage information{Colors.END}")
+        print(f"{Colors.WHITE}3. Return to menu{Colors.END}")
+        
+        try:
+            choice = input(f"\n{Colors.CYAN}Select option [1-3]: {Colors.END}").strip()
+            
+            if choice == "1":
+                print(f"\n{Colors.GREEN}🚀 Starting {tool_name}...{Colors.END}")
+                time.sleep(1)
+                for command in commands:
+                    os.system(command)
+                    
+            elif choice == "2":
+                return False  # Kembali ke menu setelah menampilkan info
+                
+        except KeyboardInterrupt:
+            print(f"\n{Colors.YELLOW}⏹️  Operation cancelled.{Colors.END}")
+            
+        return True
+
 class TermuxInstaller:
     def __init__(self):
         self.ascii_art = f"""
 {Colors.RED}{Colors.BOLD}
-                                              ███  ██                                               
-                                              ░                                                     
-                                         █▒█▒      ░░▒▒                                             
-                                             ░   ░░░    ░░░░░                                       
-                                       ░░      ░░     ░░░ ░░░▒▒▒                                    
-                             █   ░▒   ░░  ░░░░░░░░░░░░░░ ░░░ ▒  ░                                   
-                               ░▒    ░░░      ░░░░░░ ░░░░░░░░░▒░                                    
-                          ░  ░▓░ ░░░ ░░░ ░  ░  ░░ ░░░  ░░░░ ░░ ▒  ░░░                               
-                            ░░  ░░░  ░░ ░ █ ▒░  ░ ░ ░░ ░░░░░░   █                                   
-                           ▒▓░ ░░░    ░ ░ █▒ █░   ░░  ░ ░░▒░ ▒   █   ░                              
-                          █▓  ░░░░    ░   █░ ░█▓   ░░░▒      ░░  ▒▓  ░░                             
-                         █▒  ░░░░░░░░░░   █ ▓   █▓    ░▒      ░░  ▒░  ▒░   █                        
-                        ▓▒  ░░░░░ ░ ░░░   █ ▒ ▒  ░█▒   ▓▒     ░▒  ░█  ░░                            
-                     █ ▒▒░ ░░░░░░░░░░ ░░ ▒▒ ░       ██  █     ░░░  █▒  ▒░   █                       
-                       ▓▒░░░░░ ░░░░░ ░░░ ▓   ▒▒▒███▒ ██ ▒▓ ░░░░░░  █▓  ▒░   ░                       
-                    █ █ ░░░░░░░░░░░░░░░  █▓░░▓▒░      ▒█░█ ▒░░░░░▒ ▓█▒ ░▒░  ▒                       
-                      █ ░░░░░▒░░░░░░░▒  ▒█░▒█▒           █  ░░░░ ▒ ░▒█  ▒░  ░                       
-                     █▓ ░░░░░▒ ░░░░░ █  ░▓  █ ▒███████████▒ ░░░░ ░ ░▒ ▓ ░▒  ░                       
-                    ▒░▒ ▒░░░░▒ ░░░░░ █  ▓▒   ██░   ████ █ ░ ░░░░ ░  █▓▒  ░                          
-                    █ ▒ ░░░░▒▓ ░░░░░ █▒░█   ▒▒    ██░ █▒▒▒▒ ░░░░ ▒░ █ █  ░░                         
-                   ░█ ▒ ░▒░ ░▒ ░░░▒  ██ ▓ ░         ██░  ▓▒ ░░░░ ░░ █ █  ▒ ▒▓                       
-                   █  ▓  ░▒ ░▒░░░░░ ▒▒▓░  ░░░░░░░▒░      ▓░ ░░░  ░▒ ███  ▒  █ █                     
-                     ░ ▒ ░▒░▒▒▒░ ▒ ░██▒█▓ ░░░░░░░░ ░   ░ █▒ ░░░  ░▒░█▒█ ░▒  █                       
-                      ▒█░  ▒▓▒░░█▒▓█ ▒  ▒  ░░░ ░░░░░ ░ ░ ▓  ░░░░  ▒░ ▒▒  ▓  █▒                      
-                           ░▓█ ░█▓▓ █░  ░░░░░░░░░░░░░░░  █  ░░░░ ░▓░ █▒  █  █                       
-                        █    ▓  █    ▒░░░ ░░░░░░░░░░░░░  █  ░░░  ░█░░█   █ ▓█ █                     
-                         █░  █ ▒█░  ░         ░░░░░░░░░  █ ░░░░░  █  █  ░▓ ██                       
-                           ▓  ░█▒█▒    ░░▒██▓  ░░░░░░    █ ░░░░░ ▒█▒░█  ▓▒ ▒▒█ ▓                    
-                           ▓█ █▒█░▒█▒      ░ ░░░░░     ▓█  ░░░░  █▓ ░▓ ░▓▒ ▓ █ █                    
-                           ▒ █░▒   ░▒██    ░░░░░     ██▒█  ░░░░  ██ ░▒ ▒▒░ ▒░█ █                    
-                         ░░▒   ██▒░░░ ▒███       ▓████  ▓ ░░ ░░ ▒█▒ ▓░ ▒░░ ▒▓▒▒▓                    
-                         ░█▒░  ░  ░░░ █   ▓█▒░███░  █  █  ▒ ░░  █ ▓░▒ ░░░░ ▒▓██                     
-                         ▓▒ ░ █ ░░░ ▒ █  ░░ ░░   ░▓  ▒░░ ▒  ░  █▓░█▒▒░░░░░ ▓ █ ░                    
-                         ░▒ ░ █ ░░░ ▒░██▒ ▓ ░░░░  ▒▓  █ ░ ░   ██░▒█░░░░░░ ▒▓▓                       
-                        ▒▒█   █ ░░░ ▓░   ░▒░ ▒▒░░  █  ██  ░ ██░  ███  ░░  ▒                         
-                        ▒▓█  ▓▓ ░░░ ▓░     ▓ ░      ▒██  ░ █░▒ ▓█  ▒ █░  ░                          
-                        ▒▒▒ ░ █ ░░░ ▓         ░░░   ▓▒▒▓▒█▓       ▒█░▒                              
-                       ▒▓▓▓▒░       ▒         ▒█████▓███████░   ▓█▓ ████                            
-                        █░  ░    ░  ▒▓     ▒ ░              ▒▓▓▓░                                   
-                        ▒▒         ▒ ▒    ██▒▓███████▓███         ██░                               
-                                            ▓█▒    ░░▒▒░▒█▓     ░    ▒██▓                           
-                                         █ █▓          ░▓▓█▓  ░    ░░░                              
-                                         ░█      ░░░░░    ▒██   ░     ░▒      █                     
-                                         █    ░░░░░░░  ░   ░██░     ░  ░▒▓▓▒ ▒                      
-                                         ▒ ░ ░░░░ ░░░░░░     ██           ▒░ ░                      
-                                        █▓   ░░░░░░░░░░░░░ ░  █▒                                    
-                                       █ █ ░ ░░░░░░░░░░░ ░ ░░ ▒█         ░  ▒                       
-                                         █ ░ ░░░░ ░░░░░░  ░░░  █            ▒                       
-                                         █ ░ ░░░░░░░░░░  ░░░░░  █                                   
-                                  ▓      █ ░  ░░░░░ ░   ░░░░    █                                   
-                                █    ░░  █ ▒░ ░░░░░░░░░░░░░  ▒░ ░█        ░                         
-                                    ░░   █ ░░ ░░░░░░░ ░░░   ▓█░  █                                  
-                                  ░░░░  ░█ ▒░ ░░░░░░░░░░   ██░ ░ █▓                                 
-                             █  ░░░░░░░ ▒█ ▒ ░░░░░░  ░░░  ██ ░ ░ █░                                 
-                                 ░░░░   █░ ░ ░░░░░░░░░ ░ ░█  ░ ██            ▒                                                                                                                  
-                        ████████╗███████╗██████╗ ███╗   ███╗██╗   ██╗██╗  ██╗
-                        ╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██║   ██║╚██╗██╔╝
-                           ██║   █████╗  ██████╔╝██╔████╔██║██║   ██║ ╚███╔╝ 
-                           ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║ ██╔██╗ 
-                           ██║   ███████╗██║  ██║██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗
-                           ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝                              
-                            {Colors.CYAN}PROFESSIONAL INSTALLER{Colors.RED}
-                            {Colors.YELLOW}By Dwi Bakti N Dev{Colors.END}
+                           ███  ██                                               
+                           ░                                                     
+                      █▒█▒      ░░▒▒                                             
+                          ░   ░░░    ░░░░░                                       
+                    ░░      ░░     ░░░ ░░░▒▒▒                                    
+          █   ░▒   ░░  ░░░░░░░░░░░░░░ ░░░ ▒  ░                                   
+            ░▒    ░░░      ░░░░░░ ░░░░░░░░░▒░                                    
+       ░  ░▓░ ░░░ ░░░ ░  ░  ░░ ░░░  ░░░░ ░░ ▒  ░░░                               
+         ░░  ░░░  ░░ ░ █ ▒░  ░ ░ ░░ ░░░░░░   █                                   
+        ▒▓░ ░░░    ░ ░ █▒ █░   ░░  ░ ░░▒░ ▒   █   ░                              
+       █▓  ░░░░    ░   █░ ░█▓   ░░░▒      ░░  ▒▓  ░░                             
+      █▒  ░░░░░░░░░░   █ ▓   █▓    ░▒      ░░  ▒░  ▒░   █                        
+     ▓▒  ░░░░░ ░ ░░░   █ ▒ ▒  ░█▒   ▓▒     ░▒  ░█  ░░                            
+  █ ▒▒░ ░░░░░░░░░░ ░░ ▒▒ ░       ██  █     ░░░  █▒  ▒░   █                       
+    ▓▒░░░░░ ░░░░░ ░░░ ▓   ▒▒▒███▒ ██ ▒▓ ░░░░░░  █▓  ▒░   ░                       
+ █ █ ░░░░░░░░░░░░░░░  █▓░░▓▒░      ▒█░█ ▒░░░░░▒ ▓█▒ ░▒░  ▒                       
+   █ ░░░░░▒░░░░░░░▒  ▒█░▒█▒           █  ░░░░ ▒ ░▒█  ▒░  ░                       
+  █▓ ░░░░░▒ ░░░░░ █  ░▓  █ ▒███████████▒ ░░░░ ░ ░▒ ▓ ░▒  ░                       
+ ▒░▒ ▒░░░░▒ ░░░░░ █  ▓▒   ██░   ████ █ ░ ░░░░ ░  █▓▒  ░                          
+ █ ▒ ░░░░▒▓ ░░░░░ █▒░█   ▒▒    ██░ █▒▒▒▒ ░░░░ ▒░ █ █  ░░                         
+░█ ▒ ░▒░ ░▒ ░░░▒  ██ ▓ ░         ██░  ▓▒ ░░░░ ░░ █ █  ▒ ▒▓                       
+█  ▓  ░▒ ░▒░░░░░ ▒▒▓░  ░░░░░░░▒░      ▓░ ░░░  ░▒ ███  ▒  █ █                     
+  ░ ▒ ░▒░▒▒▒░ ▒ ░██▒█▓ ░░░░░░░░ ░   ░ █▒ ░░░  ░▒░█▒█ ░▒  █                       
+   ▒█░  ▒▓▒░░█▒▓█ ▒  ▒  ░░░ ░░░░░ ░ ░ ▓  ░░░░  ▒░ ▒▒  ▓  █▒                      
+        ░▓█ ░█▓▓ █░  ░░░░░░░░░░░░░░░  █  ░░░░ ░▓░ █▒  █  █                       
+     █    ▓  █    ▒░░░ ░░░░░░░░░░░░░  █  ░░░  ░█░░█   █ ▓█ █                     
+      █░  █ ▒█░  ░         ░░░░░░░░░  █ ░░░░░  █  █  ░▓ ██                       
+        ▓  ░█▒█▒    ░░▒██▓  ░░░░░░    █ ░░░░░ ▒█▒░█  ▓▒ ▒▒█ ▓                    
+        ▓█ █▒█░▒█▒      ░ ░░░░░     ▓█  ░░░░  █▓ ░▓ ░▓▒ ▓ █ █                    
+        ▒ █░▒   ░▒██    ░░░░░     ██▒█  ░░░░  ██ ░▒ ▒▒░ ▒░█ █                    
+      ░░▒   ██▒░░░ ▒███       ▓████  ▓ ░░ ░░ ▒█▒ ▓░ ▒░░ ▒▓▒▒▓                    
+      ░█▒░  ░  ░░░ █   ▓█▒░███░  █  █  ▒ ░░  █ ▓░▒ ░░░░ ▒▓██                     
+      ▓▒ ░ █ ░░░ ▒ █  ░░ ░░   ░▓  ▒░░ ▒  ░  █▓░█▒▒░░░░░ ▓ █ ░                    
+      ░▒ ░ █ ░░░ ▒░██▒ ▓ ░░░░  ▒▓  █ ░ ░   ██░▒█░░░░░░ ▒▓▓                       
+     ▒▒█   █ ░░░ ▓░   ░▒░ ▒▒░░  █  ██  ░ ██░  ███  ░░  ▒                         
+     ▒▓█  ▓▓ ░░░ ▓░     ▓ ░      ▒██  ░ █░▒ ▓█  ▒ █░  ░                          
+                                                                                           
+    ████████╗███████╗██████╗ ███╗   ███╗██╗   ██╗██╗  ██╗
+    ╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██║   ██║╚██╗██╔╝
+       ██║   █████╗  ██████╔╝██╔████╔██║██║   ██║ ╚███╔╝ 
+       ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║ ██╔██╗ 
+       ██║   ███████╗██║  ██║██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗
+       ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝                                                                        
+        {Colors.CYAN}PROFESSIONAL INSTALLER{Colors.RED}
+        {Colors.YELLOW}By Dwi Bakti N Dev{Colors.END}
 """
         
         self.installation_history = []
         self.start_time = datetime.now()
+        
+        # Informasi penggunaan untuk setiap tool
+        self.tool_usage_info = {
+            "Metasploit Framework": {
+                "info": "Metasploit adalah framework penetration testing yang powerful untuk pengujian keamanan.",
+                "examples": [
+                    ("Start Metasploit", "msfconsole"),
+                    ("Show exploits", "msfconsole -q -x 'show exploits'"),
+                    ("Search module", "msfconsole -q -x 'search type:exploit platform:android'")
+                ]
+            },
+            "SQLMap": {
+                "info": "SQLMap adalah tool automasi SQL injection dan database takeover.",
+                "examples": [
+                    ("Basic SQL injection", "cd sqlmap && python sqlmap.py -u 'http://test.com?id=1'"),
+                    ("Get database info", "cd sqlmap && python sqlmap.py -u 'http://test.com?id=1' --dbs"),
+                    ("Get tables", "cd sqlmap && python sqlmap.py -u 'http://test.com?id=1' -D database --tables")
+                ]
+            },
+            "Nmap": {
+                "info": "Nmap adalah network scanner untuk discovery dan security auditing.",
+                "examples": [
+                    ("Scan IP", "nmap 192.168.1.1"),
+                    ("Scan dengan service detection", "nmap -sV 192.168.1.1"),
+                    ("Scan semua port", "nmap -p- 192.168.1.1")
+                ]
+            },
+            "Hydra": {
+                "info": "Hydra adalah tool brute-force login yang cepat dan flexible.",
+                "examples": [
+                    ("Brute force SSH", "hydra -l admin -P passlist.txt ssh://192.168.1.1"),
+                    ("Brute force FTP", "hydra -L users.txt -P pass.txt ftp://192.168.1.1"),
+                    ("Brute force HTTP form", "hydra -l admin -P pass.txt http-get-form://192.168.1.1/login.php:username=^USER^&password=^PASS^:invalid")
+                ]
+            },
+            "Aircrack-ng": {
+                "info": "Aircrack-ng adalah suite tools untuk auditing wireless networks.",
+                "examples": [
+                    ("Monitor mode", "airmon-ng start wlan0"),
+                    ("Capture packets", "airodump-ng wlan0mon"),
+                    ("Crack WEP", "aircrack-ng -b MAC_ADDRESS capture.cap")
+                ]
+            },
+            "John The Ripper": {
+                "info": "John The Ripper adalah password cracking tool yang cepat.",
+                "examples": [
+                    ("Crack password file", "john password.txt"),
+                    ("Show cracked passwords", "john --show password.txt"),
+                    ("Wordlist attack", "john --wordlist=rockyou.txt password.txt")
+                ]
+            },
+            "Wireshark/Tshark": {
+                "info": "Tshark adalah command-line network protocol analyzer (Wireshark CLI).",
+                "examples": [
+                    ("Capture packets", "tshark -i wlan0"),
+                    ("Capture ke file", "tshark -i wlan0 -w capture.pcap"),
+                    ("Baca pcap file", "tshark -r capture.pcap")
+                ]
+            }
+        }
         
         self.menu_options = {
             "DISTRO LINUX": {
@@ -287,6 +373,17 @@ class TermuxInstaller:
             self.log_installation(description, f"Error: {str(e)}")
             return False
 
+    def post_install_handler(self, tool_name, commands=None):
+        """Menangani proses setelah instalasi berhasil"""
+        if tool_name in self.tool_usage_info:
+            info = self.tool_usage_info[tool_name]
+            ToolRunner.show_tool_info(tool_name, info["info"], info.get("examples", []))
+        
+        if commands:
+            return ToolRunner.run_tool_interactive(tool_name, commands)
+        
+        return False
+
     def install_dependencies(self):
         """Install basic dependencies"""
         print(f"{Colors.CYAN}📦 Installing Dependencies...{Colors.END}")
@@ -310,36 +407,60 @@ class TermuxInstaller:
         return True
 
     def install_ubuntu(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install ubuntu", 
-                               "Installing Ubuntu 20.04 LTS", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install ubuntu", 
+                                 "Installing Ubuntu 20.04 LTS", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Ubuntu installed! Run: proot-distro login ubuntu{Colors.END}")
+        return success
 
     def install_arch(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install archlinux", 
-                               "Installing Arch Linux", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install archlinux", 
+                                 "Installing Arch Linux", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Arch Linux installed! Run: proot-distro login archlinux{Colors.END}")
+        return success
 
     def install_kali(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install kali", 
-                               "Installing Kali Linux", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install kali", 
+                                 "Installing Kali Linux", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Kali Linux installed! Run: proot-distro login kali{Colors.END}")
+        return success
 
     def install_debian(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install debian", 
-                               "Installing Debian 11", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install debian", 
+                                 "Installing Debian 11", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Debian installed! Run: proot-distro login debian{Colors.END}")
+        return success
 
     def install_fedora(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install fedora", 
-                               "Installing Fedora 38", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install fedora", 
+                                 "Installing Fedora 38", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Fedora installed! Run: proot-distro login fedora{Colors.END}")
+        return success
 
     def install_alpine(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install alpine", 
-                               "Installing Alpine Linux", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install alpine", 
+                                 "Installing Alpine Linux", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Alpine installed! Run: proot-distro login alpine{Colors.END}")
+        return success
 
     def install_void(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install void", 
-                               "Installing Void Linux", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install void", 
+                                 "Installing Void Linux", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Void Linux installed! Run: proot-distro login void{Colors.END}")
+        return success
 
     def install_opensuse(self):
-        return self.run_command("pkg install -y proot-distro && proot-distro install opensuse", 
-                               "Installing OpenSUSE", True)
+        success = self.run_command("pkg install -y proot-distro && proot-distro install opensuse", 
+                                 "Installing OpenSUSE", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 OpenSUSE installed! Run: proot-distro login opensuse{Colors.END}")
+        return success
 
     def install_nethunter(self):
         Animations.typewriter(f"{Colors.RED}🚀 Installing Kali Nethunter...{Colors.END}")
@@ -351,31 +472,55 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Kali Nethunter installed!{Colors.END}")
+        print(f"{Colors.CYAN}Run: cd Nethunter-In-Termux && ./kalinethunter{Colors.END}")
         return True
 
     def install_metasploit(self):
         Animations.matrix_rain(2)
-        return self.run_command("pkg install -y unstable-repo && pkg install -y metasploit", 
-                               "Installing Metasploit Framework", True)
+        success = self.run_command("pkg install -y unstable-repo && pkg install -y metasploit", 
+                                 "Installing Metasploit Framework", True)
+        if success:
+            return self.post_install_handler("Metasploit Framework", ["msfconsole"])
+        return success
 
     def install_sqlmap(self):
-        return self.run_command("git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git", 
-                               "Installing SQLMap", False)
+        success = self.run_command("git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git", 
+                                 "Installing SQLMap", False)
+        if success:
+            return self.post_install_handler("SQLMap", ["cd sqlmap && python sqlmap.py --help"])
+        return success
 
     def install_nmap(self):
-        return self.run_command("pkg install -y nmap", "Installing Nmap", False)
+        success = self.run_command("pkg install -y nmap", "Installing Nmap", False)
+        if success:
+            return self.post_install_handler("Nmap", ["nmap --help"])
+        return success
 
     def install_hydra(self):
-        return self.run_command("pkg install -y hydra", "Installing Hydra", False)
+        success = self.run_command("pkg install -y hydra", "Installing Hydra", False)
+        if success:
+            return self.post_install_handler("Hydra", ["hydra -h"])
+        return success
 
     def install_aircrack(self):
-        return self.run_command("pkg install -y aircrack-ng", "Installing Aircrack-ng", False)
+        success = self.run_command("pkg install -y aircrack-ng", "Installing Aircrack-ng", False)
+        if success:
+            return self.post_install_handler("Aircrack-ng", ["aircrack-ng --help"])
+        return success
 
     def install_john(self):
-        return self.run_command("pkg install -y john", "Installing John The Ripper", False)
+        success = self.run_command("pkg install -y john", "Installing John The Ripper", False)
+        if success:
+            return self.post_install_handler("John The Ripper", ["john --help"])
+        return success
 
     def install_wireshark(self):
-        return self.run_command("pkg install -y tshark", "Installing Wireshark (tshark)", False)
+        success = self.run_command("pkg install -y tshark", "Installing Wireshark (tshark)", False)
+        if success:
+            return self.post_install_handler("Wireshark/Tshark", ["tshark --help"])
+        return success
 
     def install_beef(self):
         Animations.typewriter(f"{Colors.MAGENTA}🐮 Installing Beef Framework...{Colors.END}")
@@ -388,13 +533,22 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Beef Framework installed!{Colors.END}")
+        print(f"{Colors.CYAN}Run: cd beef && ./beef{Colors.END}")
         return True
 
     def install_burpsuite(self):
-        return self.run_command("pkg install -y burpsuite", "Installing Burp Suite Community", True)
+        success = self.run_command("pkg install -y burpsuite", "Installing Burp Suite Community", True)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Burp Suite installed! Run: burpsuite{Colors.END}")
+        return success
 
     def install_nikto(self):
-        return self.run_command("pkg install -y nikto", "Installing Nikto Scanner", False)
+        success = self.run_command("pkg install -y nikto", "Installing Nikto Scanner", False)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Nikto installed! Run: nikto -h{Colors.END}")
+        return success
 
     def install_setoolkit(self):
         commands = [
@@ -404,6 +558,9 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 SEToolkit installed!{Colors.END}")
+        print(f"{Colors.CYAN}Run: cd setoolkit && python setoolkit{Colors.END}")
         return True
 
     def install_routersploit(self):
@@ -414,6 +571,9 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 RouterSploit installed!{Colors.END}")
+        print(f"{Colors.CYAN}Run: cd routersploit && python rsf.py{Colors.END}")
         return True
 
     def install_reconng(self):
@@ -424,6 +584,9 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Recon-ng installed!{Colors.END}")
+        print(f"{Colors.CYAN}Run: cd recon-ng && python recon-ng{Colors.END}")
         return True
 
     def install_theharvester(self):
@@ -434,20 +597,36 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 TheHarvester installed!{Colors.END}")
+        print(f"{Colors.CYAN}Run: cd theHarvester && python theHarvester.py -h{Colors.END}")
         return True
 
     def install_osint(self):
-        return self.run_command("git clone https://github.com/lockfale/OSINT-Framework.git", 
-                               "Installing OSINT Framework", False)
+        success = self.run_command("git clone https://github.com/lockfale/OSINT-Framework.git", 
+                                 "Installing OSINT Framework", False)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 OSINT Framework installed!{Colors.END}")
+            print(f"{Colors.CYAN}Open: firefox OSINT-Framework/index.html{Colors.END}")
+        return success
 
     def install_whatweb(self):
-        return self.run_command("pkg install -y whatweb", "Installing WhatWeb", False)
+        success = self.run_command("pkg install -y whatweb", "Installing WhatWeb", False)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 WhatWeb installed! Run: whatweb -h{Colors.END}")
+        return success
 
     def install_dirb(self):
-        return self.run_command("pkg install -y dirb", "Installing Dirb", False)
+        success = self.run_command("pkg install -y dirb", "Installing Dirb", False)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Dirb installed! Run: dirb -h{Colors.END}")
+        return success
 
     def install_gobuster(self):
-        return self.run_command("pkg install -y gobuster", "Installing Gobuster", False)
+        success = self.run_command("pkg install -y gobuster", "Installing Gobuster", False)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Gobuster installed! Run: gobuster -h{Colors.END}")
+        return success
 
     def install_programming_tools(self):
         commands = [
@@ -459,6 +638,9 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Programming tools installed!{Colors.END}")
+        print(f"{Colors.CYAN}Available: python, node, go, ruby, php, vim, nano{Colors.END}")
         return True
 
     def install_network_tools(self):
@@ -470,10 +652,16 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Network tools installed!{Colors.END}")
+        print(f"{Colors.CYAN}Available: curl, wget, netstat, tcpdump, nc, ssh{Colors.END}")
         return True
 
     def install_git_tools(self):
-        return self.run_command("pkg install -y git git-lfs", "Installing Git tools", False)
+        success = self.run_command("pkg install -y git git-lfs", "Installing Git tools", False)
+        if success:
+            print(f"\n{Colors.GREEN}🎯 Git tools installed! Run: git --version{Colors.END}")
+        return success
 
     def install_database_tools(self):
         commands = [
@@ -484,6 +672,9 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Database tools installed!{Colors.END}")
+        print(f"{Colors.CYAN}Available: sqlite, mysql, postgresql{Colors.END}")
         return True
 
     def install_web_tools(self):
@@ -495,6 +686,9 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Web tools installed!{Colors.END}")
+        print(f"{Colors.CYAN}Available: apache2, nginx, php{Colors.END}")
         return True
 
     def system_upgrade(self):
@@ -542,6 +736,9 @@ class TermuxInstaller:
         for cmd, desc, show_out in commands:
             if not self.run_command(cmd, desc, show_out):
                 return False
+        
+        print(f"\n{Colors.GREEN}🎯 Termux Theme installed!{Colors.END}")
+        print(f"{Colors.CYAN}Run: termux-style{Colors.END}")
         return True
 
     def install_games(self):
@@ -559,7 +756,8 @@ class TermuxInstaller:
             self.run_command(cmd, f"Installing {game_name}", False)
             time.sleep(1)
         
-        print(f"{Colors.GREEN}🎯 Games installed! Try 'moon-buggy' or 'nudoku' to play!{Colors.END}")
+        print(f"\n{Colors.GREEN}🎯 Games installed!{Colors.END}")
+        print(f"{Colors.CYAN}Try: moon-buggy, nudoku, nethack, pacman4console{Colors.END}")
         return True
 
     def custom_commands_menu(self):
@@ -636,6 +834,13 @@ class TermuxInstaller:
             time.sleep(2)  # Give time to see progress
         
         print(f"{Colors.GREEN}🎯 Installation complete! {successful}/{len(tools)} tools installed successfully.{Colors.END}")
+        
+        # Show summary of installed tools
+        print(f"\n{Colors.CYAN}📋 INSTALLED TOOLS SUMMARY:{Colors.END}")
+        for name, _ in tools:
+            status = "✓" if any(name in str(hist['tool']) for hist in self.installation_history if hist['status'] == 'Success') else "✗"
+            color = Colors.GREEN if status == "✓" else Colors.RED
+            print(f"  {color}{status} {name}{Colors.END}")
 
     def display_menu(self):
         """Display the enhanced main menu"""
